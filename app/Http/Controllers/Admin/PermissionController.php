@@ -16,10 +16,14 @@ use Illuminate\Support\Facades\DB;
 
 class PermissionController extends Controller
 {
-    public function __construct() 
+    protected $pdf;
+    
+    public function __construct(\App\Reports\TemplateReport $pdf) 
     {
         $this->middleware(['middleware' => 'auth']);
         $this->middleware(['middleware' => 'hasaccess']);
+
+        $this->pdf = $pdf;
     }
 
     public function index()
@@ -200,7 +204,37 @@ class PermissionController extends Controller
             abort(403, 'Acesso negado.');
         }
         
-        dd('Não Implementado');
+        $this->pdf->AliasNbPages();   
+        $this->pdf->SetMargins(12, 10, 12);
+        $this->pdf->SetFont('Arial','',12);
+        $this->pdf->AddPage();
+
+        $permissions = DB::table('permissions');
+
+        $permissions = $permissions->select('name', 'description');
+
+        // filtros
+        if (request()->has('name')){
+            $permissions = $permissions->where('name', 'like', '%' . request('name') . '%');
+        }
+
+        if (request()->has('description')){
+            $permissions = $permissions->where('description', 'like', '%' . request('description') . '%');
+        }
+
+        $permissions = $permissions->orderBy('name', 'asc');    
+
+
+        $permissions = $permissions->get();
+
+        foreach ($permissions as $permission) {
+            $this->pdf->Cell(80, 6, utf8_decode($permission->name), 0, 0,'L');
+            $this->pdf->Cell(106, 6, utf8_decode($permission->description), 0, 0,'L');
+            $this->pdf->Ln();
+        }
+
+        $this->pdf->Output('D', 'Permissões_' .  date("Y-m-d H:i:s") . '.pdf', true);
+        exit;
     }
 
 }

@@ -17,11 +17,14 @@ use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
+    protected $pdf;
 
-    public function __construct()
+    public function __construct(\App\Reports\TemplateReport $pdf)
     {
         $this->middleware(['middleware' => 'auth']);
         $this->middleware(['middleware' => 'hasaccess']);
+
+        $this->pdf = $pdf;
     }
 
     public function index()
@@ -254,6 +257,36 @@ class UserController extends Controller
             abort(403, 'Acesso negado.');
         }
         
-        dd('Não implementado');
+        $this->pdf->AliasNbPages();   
+        $this->pdf->SetMargins(12, 10, 12);
+        $this->pdf->SetFont('Arial','',12);
+        $this->pdf->AddPage();
+
+        
+        $users = DB::table('users');
+
+        $users = $users->select('name', 'email');
+
+        // filtros
+        if (request()->has('name')){
+            $users = $users->where('name', 'like', '%' . request('name') . '%');
+        }
+
+        if (request()->has('email')){
+            $users = $users->where('email', 'like', '%' . request('email') . '%');
+        }
+
+        $users = $users->orderBy('name', 'asc');
+
+        $users = $users->get();
+
+        foreach ($users as $user) {
+            $this->pdf->Cell(93, 6, utf8_decode($user->name), 0, 0,'L');
+            $this->pdf->Cell(93, 6, utf8_decode($user->email), 0, 0,'L');
+            $this->pdf->Ln();
+        }
+
+        $this->pdf->Output('D', 'Operadores_' .  date("Y-m-d H:i:s") . '.pdf', true);
+        exit;
     }
 }

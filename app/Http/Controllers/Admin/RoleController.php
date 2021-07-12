@@ -16,13 +16,14 @@ use Illuminate\Support\Facades\DB;
 
 class RoleController extends Controller
 {
+    protected $pdf;
 
-    protected $pdf; // usado para injeção do cabeçalho e rodapé da impressão pelo fpdf
-
-    public function __construct() 
+    public function __construct(\App\Reports\TemplateReport $pdf) 
     {
         $this->middleware(['middleware' => 'auth']);
         $this->middleware(['middleware' => 'hasaccess']);
+
+        $this->pdf = $pdf;
     }
 
     public function index()
@@ -233,6 +234,36 @@ class RoleController extends Controller
             abort(403, 'Acesso negado.');
         }
         
-        dd('Não Implementado');
-    } 
+        $this->pdf->AliasNbPages();   
+        $this->pdf->SetMargins(12, 10, 12);
+        $this->pdf->SetFont('Arial','',12);
+        $this->pdf->AddPage();
+
+        $roles = DB::table('roles');
+
+        $roles = $roles->select('name', 'description');
+
+        // filtros
+        if (request()->has('name')){
+            $roles = $roles->where('name', 'like', '%' . request('name') . '%');
+        }
+
+        if (request()->has('description')){
+            $roles = $roles->where('description', 'like', '%' . request('description') . '%');
+        }
+
+        $roles = $roles->orderBy('name', 'asc');    
+
+
+        $roles = $roles->get();
+
+        foreach ($roles as $role) {
+            $this->pdf->Cell(80, 6, utf8_decode($role->name), 0, 0,'L');
+            $this->pdf->Cell(106, 6, utf8_decode($role->description), 0, 0,'L');
+            $this->pdf->Ln();
+        }
+
+        $this->pdf->Output('D', 'Perfis_' .  date("Y-m-d H:i:s") . '.pdf', true);
+        exit;
+    }
 }
