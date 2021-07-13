@@ -31,7 +31,7 @@
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalCenterTitle"><i class="bi bi-patch-question"></i> Enviar para Lixeira</h5>
+          <h5 class="modal-title" id="exampleModalCenterTitle"><i class="bi bi-patch-question"></i> Apagar Registro</h5>
           <button type="button" class="close" data-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
@@ -48,7 +48,7 @@
               <label for="motivo">Motivo</label>  
               <input type="text" class="form-control" name="motivo" id="motivo" value="">
             </div>
-            <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Enviar para Lixeira</button>
+            <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Apagar Registro</button>
           </form>
         </div>     
         <div class="modal-footer">

@@ -39,6 +39,39 @@
                             </div>
                         </div>
 
+
+
+
+                        <div class="form-group row">
+                            <label for="captcha_img" class="col-md-4 col-form-label text-md-right"></label>
+                            <div class="col-md-6">
+                                <div class="captcha_img">
+                                    <span>{!! captcha_img() !!}</span>
+                                    <button type="button" class="btn btn-danger" class="reload" id="reload">
+                                    ↻
+                                    </button>
+                                </div>
+                            </div>    
+                        </div>
+
+
+                        <div class="form-group row">
+                            <label for="captcha" class="col-md-4 col-form-label text-md-right">Captcha</label>
+
+                            <div class="col-md-6">
+                                <input id="captcha" type="text" class="form-control @error('captcha') is-invalid @enderror" name="captcha" required autocomplete="captcha">
+
+                                @error('captcha')
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
+                                @enderror
+                            </div>
+                        </div>
+
+
+
+
                         <div class="form-group row">
                             <div class="col-md-6 offset-md-4">
                                 <div class="form-check">
@@ -70,4 +103,19 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('script-footer')
+
+<script type="text/javascript">
+    $(document).ready(function(){
+
+
+        $('#reload').click(function () {
+            location.reload();
+            return false;
+        });
+    });    
+</script>
+
 @endsection
