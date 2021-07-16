@@ -148,7 +148,7 @@ class UserController extends Controller
         $user = User::findOrFail($id);
 
         // atualiza a senha do usuário se esse campo tiver sido preenchido
-        if ($request->has('password')) {
+        if ($request->has('password') && (request('password') != "")) {
             $input = $request->all();
             $input['password'] = Hash::make($input['password']);
         } else {
