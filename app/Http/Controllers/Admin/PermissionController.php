@@ -14,16 +14,17 @@ use Illuminate\Support\Facades\Gate;
 
 use Illuminate\Support\Facades\DB;
 
+use App\Exports\PermissionsExport;
+use Maatwebsite\Excel\Facades\Excel;
+
+use Barryvdh\DomPDF\Facade\Pdf;
+
 class PermissionController extends Controller
-{
-    protected $pdf;
-    
-    public function __construct(\App\Reports\TemplateReport $pdf) 
+{  
+    public function __construct() 
     {
         $this->middleware(['middleware' => 'auth']);
         $this->middleware(['middleware' => 'hasaccess']);
-
-        $this->pdf = $pdf;
     }
 
     public function index()
@@ -151,51 +152,26 @@ class PermissionController extends Controller
             abort(403, 'Acesso negado.');
         }
 
-        $headers = [
-                'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0'
-            ,   'Content-type'        => 'text/csv; charset=UTF-8'
-            ,   'Content-Disposition' => 'attachment; filename=Permissões_' .  date("Y-m-d H:i:s") . '.csv'
-            ,   'Expires'             => '0'
-            ,   'Pragma'              => 'public'
-        ];
+        # filtragem
+        $filter_name = (request()->has('name') ? request('name') : '');
+        
+        $filter_description = (request()->has('description') ? request('description') : '');
 
-        $permissions = DB::table('permissions');
+        return Excel::download(new PermissionsExport($filter_name, $filter_description), 'Permissoes_' .  date("Y-m-d H:i:s") . '.csv', \Maatwebsite\Excel\Excel::CSV);
+    }
 
-        $permissions = $permissions->select('name', 'description');
-
-        // filtros
-        if (request()->has('name')){
-            $permissions = $permissions->where('name', 'like', '%' . request('name') . '%');
+    public function exportxls()
+    {
+        if (Gate::denies('permission-export')) {
+            abort(403, 'Acesso negado.');
         }
 
-        if (request()->has('description')){
-            $permissions = $permissions->where('description', 'like', '%' . request('description') . '%');
-        }
+        # filtragem
+        $filter_name = (request()->has('name') ? request('name') : '');
+        
+        $filter_description = (request()->has('description') ? request('description') : '');
 
-        $permissions = $permissions->orderBy('name', 'asc');
-
-        $list = $permissions->get()->toArray();
-
-        // nota: mostra consulta gerada pelo elloquent
-        // dd($distritos->toSql());
-
-        # converte os objetos para uma array
-        $list = json_decode(json_encode($list), true);
-
-        # add headers for each column in the CSV download
-        array_unshift($list, array_keys($list[0]));
-
-       $callback = function() use ($list)
-        {
-            $FH = fopen('php://output', 'w');
-            fputs($FH, $bom = ( chr(0xEF) . chr(0xBB) . chr(0xBF) ));
-            foreach ($list as $row) {
-                fputcsv($FH, $row, chr(59));
-            }
-            fclose($FH);
-        };
-
-        return Response::stream($callback, 200, $headers);
+        return Excel::download(new PermissionsExport($filter_name, $filter_description), 'Permissoes_' .  date("Y-m-d H:i:s") . '.xlsx', \Maatwebsite\Excel\Excel::XLSX);
     }
 
     public function exportpdf()
@@ -203,38 +179,31 @@ class PermissionController extends Controller
         if (Gate::denies('permission-export')) {
             abort(403, 'Acesso negado.');
         }
+
+        # tratamento dos filtros
+        $filter_name = (request()->has('name') ? request('name') : '');
         
-        $this->pdf->AliasNbPages();   
-        $this->pdf->SetMargins(12, 10, 12);
-        $this->pdf->SetFont('Arial','',12);
-        $this->pdf->AddPage();
+        $filter_description = (request()->has('description') ? request('description') : '');
 
-        $permissions = DB::table('permissions');
+        # criação do dataset
+        $dataset = new Permission;
 
-        $permissions = $permissions->select('name', 'description');
+        $dataset = $dataset->select('name', 'description');
 
-        // filtros
-        if (request()->has('name')){
-            $permissions = $permissions->where('name', 'like', '%' . request('name') . '%');
+        if (!empty($filter_name)){
+            $dataset = $dataset->where('name', 'like', '%' . $filter_name . '%');    
         }
 
-        if (request()->has('description')){
-            $permissions = $permissions->where('description', 'like', '%' . request('description') . '%');
+        if (!empty($filter_description)){
+            $dataset = $dataset->Where('description', 'like', '%' . $filter_description . '%');
         }
 
-        $permissions = $permissions->orderBy('name', 'asc');    
+        $dataset = $dataset->get();
 
+        $pdf = PDF::loadView('admin.permissions.report', compact('dataset'));
+        
+        return $pdf->download('Permissoes_' .  date("Y-m-d H:i:s") . '.pdf');
 
-        $permissions = $permissions->get();
-
-        foreach ($permissions as $permission) {
-            $this->pdf->Cell(80, 6, utf8_decode($permission->name), 0, 0,'L');
-            $this->pdf->Cell(106, 6, utf8_decode($permission->description), 0, 0,'L');
-            $this->pdf->Ln();
-        }
-
-        $this->pdf->Output('D', 'Permissões_' .  date("Y-m-d H:i:s") . '.pdf', true);
-        exit;
     }
 
 }

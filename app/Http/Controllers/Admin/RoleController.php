@@ -14,16 +14,18 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
 
+use App\Exports\RolesExport;
+use Maatwebsite\Excel\Facades\Excel;
+
+use Barryvdh\DomPDF\Facade\Pdf;
+
 class RoleController extends Controller
 {
-    protected $pdf;
 
-    public function __construct(\App\Reports\TemplateReport $pdf) 
+    public function __construct() 
     {
         $this->middleware(['middleware' => 'auth']);
         $this->middleware(['middleware' => 'hasaccess']);
-
-        $this->pdf = $pdf;
     }
 
     public function index()
@@ -180,90 +182,56 @@ class RoleController extends Controller
             abort(403, 'Acesso negado.');
         }
 
-        $headers = [
-                'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0'
-            ,   'Content-type'        => 'text/csv; charset=UTF-8'
-            ,   'Content-Disposition' => 'attachment; filename=Perfis_' .  date("Y-m-d H:i:s") . '.csv'
-            ,   'Expires'             => '0'
-            ,   'Pragma'              => 'public'
-        ];
+        # filtragem
+        $filter_name = (request()->has('name') ? request('name') : '');
+        
+        $filter_description = (request()->has('description') ? request('description') : '');
 
-        $roles = DB::table('roles');
-
-        $roles = $roles->select('name', 'description');
-
-        // filtros
-        if (request()->has('name')){
-            $roles = $roles->where('name', 'like', '%' . request('name') . '%');
-        }
-
-        if (request()->has('description')){
-            $roles = $roles->where('description', 'like', '%' . request('description') . '%');
-        }
-
-        $roles = $roles->orderBy('name', 'asc');
-
-        $list = $roles->get()->toArray();
-
-        // nota: mostra consulta gerada pelo elloquent
-        // dd($distritos->toSql());
-
-        # converte os objetos para uma array
-        $list = json_decode(json_encode($list), true);
-
-        # add headers for each column in the CSV download
-        array_unshift($list, array_keys($list[0]));
-
-       $callback = function() use ($list)
-        {
-            $FH = fopen('php://output', 'w');
-            fputs($FH, $bom = ( chr(0xEF) . chr(0xBB) . chr(0xBF) ));
-            foreach ($list as $row) {
-                fputcsv($FH, $row, chr(59));
-            }
-            fclose($FH);
-        };
-
-        return Response::stream($callback, 200, $headers);
+        return Excel::download(new RolesExport($filter_name, $filter_description), 'Perfis_' .  date("Y-m-d H:i:s") . '.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
+    public function exportxls()
+    {
+        if (Gate::denies('role-export')) {
+            abort(403, 'Acesso negado.');
+        }
+
+        # filtragem
+        $filter_name = (request()->has('name') ? request('name') : '');
+        
+        $filter_description = (request()->has('description') ? request('description') : '');
+
+        return Excel::download(new RolesExport($filter_name, $filter_description), 'Perfis_' .  date("Y-m-d H:i:s") . '.xlsx', \Maatwebsite\Excel\Excel::XLSX);
+    }
 
     public function exportpdf()
     {
         if (Gate::denies('role-export')) {
             abort(403, 'Acesso negado.');
         }
+
+        # tratamento dos filtros
+        $filter_name = (request()->has('name') ? request('name') : '');
         
-        $this->pdf->AliasNbPages();   
-        $this->pdf->SetMargins(12, 10, 12);
-        $this->pdf->SetFont('Arial','',12);
-        $this->pdf->AddPage();
+        $filter_description = (request()->has('description') ? request('description') : '');
 
-        $roles = DB::table('roles');
+        # criação do dataset
+        $dataset = new Role;
 
-        $roles = $roles->select('name', 'description');
+        $dataset = $dataset->select('name', 'description');
 
-        // filtros
-        if (request()->has('name')){
-            $roles = $roles->where('name', 'like', '%' . request('name') . '%');
+        if (!empty($filter_name)){
+            $dataset = $dataset->where('name', 'like', '%' . $filter_name . '%');    
         }
 
-        if (request()->has('description')){
-            $roles = $roles->where('description', 'like', '%' . request('description') . '%');
+        if (!empty($filter_description)){
+            $dataset = $dataset->Where('description', 'like', '%' . $filter_description . '%');
         }
 
-        $roles = $roles->orderBy('name', 'asc');    
+        $dataset = $dataset->get();
 
-
-        $roles = $roles->get();
-
-        foreach ($roles as $role) {
-            $this->pdf->Cell(80, 6, utf8_decode($role->name), 0, 0,'L');
-            $this->pdf->Cell(106, 6, utf8_decode($role->description), 0, 0,'L');
-            $this->pdf->Ln();
-        }
-
-        $this->pdf->Output('D', 'Perfis_' .  date("Y-m-d H:i:s") . '.pdf', true);
-        exit;
-    }
+        $pdf = PDF::loadView('admin.roles.report', compact('dataset'));
+        
+        return $pdf->download('Perfis_' .  date("Y-m-d H:i:s") . '.pdf');
+    }     
 }

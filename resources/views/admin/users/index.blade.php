@@ -34,7 +34,8 @@
         <a class="dropdown-item" href="{{ route('roles.index') }}"><i class="bi bi-layout-sidebar"></i> Perfis</a>
         <a class="dropdown-item" href="{{ route('permissions.index') }}"><i class="bi bi-layout-sidebar"></i> Permissões</a>
         <div class="dropdown-divider"></div>
-        <a class="dropdown-item" href="#" id="btnExportarCSV"><i class="bi bi-file-earmark-spreadsheet-fill"></i> Exportar Planilha</a>
+        <a class="dropdown-item" href="#" id="btnExportarXLS"><i class="bi bi-file-earmark-spreadsheet-fill"></i> Exportar Planilha Excel</a>
+        <a class="dropdown-item" href="#" id="btnExportarCSV"><i class="bi bi-file-earmark-spreadsheet-fill"></i> Exportar Planilha CSV</a>
         <a class="dropdown-item" href="#" id="btnExportarPDF"><i class="bi bi-file-pdf-fill"></i> Exportar PDF</a>
       </div>
     </div>
@@ -123,6 +124,12 @@ $(document).ready(function(){
         perpage = $(this).find(":selected").val(); 
         
         window.open("{{ route('users.index') }}" + "?perpage=" + perpage,"_self");
+    });
+
+    $('#btnExportarXLS').on('click', function(){
+        var filtro_name = $('input[name="name"]').val();
+        var filtro_email = $('input[name="email"]').val();
+        window.open("{{ route('users.export.xls') }}" + "?name=" + filtro_name + "&email=" + filtro_email,"_self");
     });
 
     $('#btnExportarCSV').on('click', function(){

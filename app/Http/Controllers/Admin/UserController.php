@@ -15,16 +15,18 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
 
+use App\Exports\UsersExport;
+use Maatwebsite\Excel\Facades\Excel;
+
+use Barryvdh\DomPDF\Facade\Pdf;
+
 class UserController extends Controller
 {
-    protected $pdf;
 
-    public function __construct(\App\Reports\TemplateReport $pdf)
+    public function __construct()
     {
         $this->middleware(['middleware' => 'auth']);
         $this->middleware(['middleware' => 'hasaccess']);
-
-        $this->pdf = $pdf;
     }
 
     public function index()
@@ -198,57 +200,32 @@ class UserController extends Controller
         return redirect(route('users.index'));
     }
 
-    public function exportcsv()
+public function exportcsv()
     {
         if (Gate::denies('user-export')) {
             abort(403, 'Acesso negado.');
         }
 
-        $headers = [
-                'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0'
-            ,   'Content-type'        => 'text/csv; charset=UTF-8'
-            ,   'Content-Disposition' => 'attachment; filename=Operadores_' .  date("Y-m-d H:i:s") . '.csv'
-            ,   'Expires'             => '0'
-            ,   'Pragma'              => 'public'
-        ];
+        # filtragem
+        $filter_name = (request()->has('name') ? request('name') : '');
+        
+        $filter_email = (request()->has('email') ? request('email') : '');
 
-        $users = DB::table('users');
+        return Excel::download(new UsersExport($filter_name, $filter_email), 'Operadores_' .  date("Y-m-d H:i:s") . '.csv', \Maatwebsite\Excel\Excel::CSV);
+    }
 
-        $users = $users->select('name', 'email');
-
-        // filtros
-        if (request()->has('name')){
-            $users = $users->where('name', 'like', '%' . request('name') . '%');
+    public function exportxls()
+    {
+        if (Gate::denies('user-export')) {
+            abort(403, 'Acesso negado.');
         }
 
-        if (request()->has('email')){
-            $users = $users->where('email', 'like', '%' . request('email') . '%');
-        }
+        # filtragem
+        $filter_name = (request()->has('name') ? request('name') : '');
+        
+        $filter_email = (request()->has('email') ? request('email') : '');
 
-        $users = $users->orderBy('name', 'asc');
-
-        $list = $users->get()->toArray();
-
-        // nota: mostra consulta gerada pelo elloquent
-        // dd($distritos->toSql());
-
-        # converte os objetos para uma array
-        $list = json_decode(json_encode($list), true);
-
-        # add headers for each column in the CSV download
-        array_unshift($list, array_keys($list[0]));
-
-       $callback = function() use ($list)
-        {
-            $FH = fopen('php://output', 'w');
-            fputs($FH, $bom = ( chr(0xEF) . chr(0xBB) . chr(0xBF) ));
-            foreach ($list as $row) {
-                fputcsv($FH, $row, chr(59));
-            }
-            fclose($FH);
-        };
-
-        return Response::stream($callback, 200, $headers);
+        return Excel::download(new UsersExport($filter_name, $filter_email), 'Operadores_' .  date("Y-m-d H:i:s") . '.xlsx', \Maatwebsite\Excel\Excel::XLSX);
     }
 
     public function exportpdf()
@@ -256,37 +233,29 @@ class UserController extends Controller
         if (Gate::denies('user-export')) {
             abort(403, 'Acesso negado.');
         }
+
+        # tratamento dos filtros
+        $filter_name = (request()->has('name') ? request('name') : '');
         
-        $this->pdf->AliasNbPages();   
-        $this->pdf->SetMargins(12, 10, 12);
-        $this->pdf->SetFont('Arial','',12);
-        $this->pdf->AddPage();
+        $filter_email = (request()->has('email') ? request('description') : '');
 
+        # criação do dataset
+        $dataset = new User;
+
+        $dataset = $dataset->select('name', 'email');
+
+        if (!empty($filter_name)){
+            $dataset = $dataset->where('name', 'like', '%' . $filter_name . '%');    
+        }
+
+        if (!empty($filter_email)){
+            $dataset = $dataset->Where('email', 'like', '%' . $filter_email . '%');
+        }
+
+        $dataset = $dataset->get();
+
+        $pdf = PDF::loadView('admin.users.report', compact('dataset'));
         
-        $users = DB::table('users');
-
-        $users = $users->select('name', 'email');
-
-        // filtros
-        if (request()->has('name')){
-            $users = $users->where('name', 'like', '%' . request('name') . '%');
-        }
-
-        if (request()->has('email')){
-            $users = $users->where('email', 'like', '%' . request('email') . '%');
-        }
-
-        $users = $users->orderBy('name', 'asc');
-
-        $users = $users->get();
-
-        foreach ($users as $user) {
-            $this->pdf->Cell(93, 6, utf8_decode($user->name), 0, 0,'L');
-            $this->pdf->Cell(93, 6, utf8_decode($user->email), 0, 0,'L');
-            $this->pdf->Ln();
-        }
-
-        $this->pdf->Output('D', 'Operadores_' .  date("Y-m-d H:i:s") . '.pdf', true);
-        exit;
-    }
+        return $pdf->download('Users_' .  date("Y-m-d H:i:s") . '.pdf');
+    } 
 }
