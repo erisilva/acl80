@@ -22,27 +22,14 @@ class PermissionsExport implements FromQuery, WithHeadings
     *
     */
 
-    public function __construct($name, $description)
+    public function __construct($filter)
     {
-        $this->name = $name;
-        $this->description = $description;
+        $this->filter = $filter;
     }
-
 
     public function query()
     {
-        $result = Permission::query()->select('name', 'description');
-
-        if (!empty($this->name)){
-            $result = $result->where('name', 'like', '%' . $this->name . '%');    
-        }
-
-        if (!empty($this->description)){
-            $result = $result->Where('description', 'like', '%' . $this->description . '%');
-        }
-
-
-        return $result;
+        return Permission::query()->select('name', 'description')->orderBy('id', 'asc')->filter($this->filter);
     }
 
     public function headings(): array

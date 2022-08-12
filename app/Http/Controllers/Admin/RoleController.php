@@ -34,36 +34,14 @@ class RoleController extends Controller
             abort(403, 'Acesso negado.');
         }
 
-        $roles = new Role;
-
-        // filtros
-        if (request()->has('name')){
-            $roles = $roles->where('name', 'like', '%' . request('name') . '%');
-        }
-
-        if (request()->has('description')){
-            $roles = $roles->where('description', 'like', '%' . request('description') . '%');
-        }            
-        // ordena
-        $roles = $roles->orderBy('name', 'asc');
-
-        // se a requisição tiver um novo valor para a quantidade
-        // de páginas por visualização ele altera aqui
         if(request()->has('perpage')) {
             session(['perPage' => request('perpage')]);
         }
 
-        // consulta a tabela perpage para ter a lista de
-        // quantidades de paginação
-        $perpages = Perpage::orderBy('valor')->get();
-
-        // paginação
-        $roles = $roles->paginate(session('perPage', '5'))->appends([          
-            'name' => request('name'),
-            'description' => request('description'),           
-            ]);
-
-        return view('admin.roles.index', compact('roles', 'perpages'));
+        return view('admin.roles.index', [
+            'roles' => Role::orderBy('id', 'asc')->filter(request(['name', 'description']))->paginate(session('perPage', '5'))->appends(request(['name', 'description'])),
+            'perpages' => Perpage::orderBy('valor')->get()
+        ]);
     }
 
     public function create()
@@ -72,34 +50,41 @@ class RoleController extends Controller
             abort(403, 'Acesso negado.');
         }
 
-        // listagem de perfis (roles)
-        $permissions = Permission::orderBy('name','asc')->get();
-
-        return view('admin.roles.create', compact('permissions'));
+        return view('admin.roles.create', [
+            'permissions' => Permission::orderBy('name','asc')->get()
+        ]);
     }
 
     public function store(Request $request)
     {
+        // Nota: o $request->validate retorna só os campos que forem validados na lista
         $this->validate($request, [
           'name' => 'required',
           'description' => 'required',
-        ]);
+        ]);        
 
-        $role = $request->all();
+        DB::beginTransaction();
 
-        $newRole = Role::create($role); //salva
+        try{
+            $role = $request->all();
 
-        // salva os perfis (roles)
-        if(isset($role['permissions']) && count($role['permissions'])){
-            foreach ($role['permissions'] as $key => $value) {
-                $newRole->permissions()->attach($value);
+            $newRole = Role::create($role);
+
+            // salva os perfis (roles)
+            if(isset($role['permissions']) && count($role['permissions'])){
+                foreach ($role['permissions'] as $key => $value) {
+                    $newRole->permissions()->attach($value);
+                }
             }
 
-        } 
+            DB::commit();
 
-        Session::flash('create_role', 'Perfil cadastrado com sucesso!');
+            return redirect(route('roles.index'))->with('message', 'Perfil cadastrado com sucesso!');
 
-        return redirect(route('roles.index'));
+        }catch(\Exception $e){
+            DB::rollback();
+            return redirect()->route('roles.index')->with('message','Erro ao incluir');
+        }
     }
 
     public function show($id)
@@ -108,10 +93,9 @@ class RoleController extends Controller
             abort(403, 'Acesso negado.');
         }
 
-        // perfil que será exibido e pode ser excluido
-        $role = Role::findOrFail($id);
-
-        return view('admin.roles.show', compact('role'));
+        return view('admin.roles.show', [
+            'role' => Role::findOrFail($id)
+        ]);
     }
 
     public function edit($id)
@@ -120,13 +104,10 @@ class RoleController extends Controller
             abort(403, 'Acesso negado.');
         }
 
-        // perfil que será alterado
-        $role = Role::findOrFail($id);
-
-        // listagem de perfis (roles)
-        $permissions = Permission::orderBy('name','asc')->get();
-
-        return view('admin.roles.edit', compact('role', 'permissions'));
+        return view('admin.roles.edit', [
+            'role' => Role::findOrFail($id),
+            'permissions' => Permission::orderBy('name','asc')->get()
+        ]);
     }
 
     public function update(Request $request, $id)

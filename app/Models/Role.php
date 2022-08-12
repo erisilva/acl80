@@ -13,6 +13,16 @@ class Role extends Model
         'name', 'description',
     ];
 
+    public function scopeFilter($query, array $filters){
+        if($filters['name'] ?? false) {
+            $query->where('name', 'like', '%' . request('name') . '%');
+        }
+
+        if($filters['description'] ?? false) {
+            $query->where('description', 'like', '%' . request('description') . '%');
+        }
+    }
+
     /**
      * Operadores desse perfil
      *

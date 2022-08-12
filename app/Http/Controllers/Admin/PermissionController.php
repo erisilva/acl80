@@ -33,37 +33,15 @@ class PermissionController extends Controller
             abort(403, 'Acesso negado.');
         }
 
-        $permissions = new Permission;
-
-        // filtros
-        if (request()->has('name')){
-            $permissions = $permissions->where('name', 'like', '%' . request('name') . '%');
-        }
-
-        if (request()->has('description')){
-            $permissions = $permissions->where('description', 'like', '%' . request('description') . '%');
-        }
-
-        // ordena
-        $permissions = $permissions->orderBy('name', 'asc');
-
-        // se a requisição tiver um novo valor para a quantidade
-        // de páginas por visualização ele altera aqui
+        // atualiza perPage se necessário
         if(request()->has('perpage')) {
             session(['perPage' => request('perpage')]);
         }
 
-        // consulta a tabela perpage para ter a lista de
-        // quantidades de paginação
-        $perpages = Perpage::orderBy('valor')->get();
-
-        // paginação
-        $permissions = $permissions->paginate(session('perPage', '5'))->appends([          
-            'name' => request('name'),
-            'description' => request('description'),           
-            ]);
-
-        return view('admin.permissions.index', compact('permissions', 'perpages'));
+        return view('admin.permissions.index', [
+            'permissions' => Permission::orderBy('id', 'asc')->filter(request(['name', 'description']))->paginate(session('perPage', '5'))->appends(request(['name', 'description'])),
+            'perpages' => Perpage::orderBy('valor')->get()
+        ]);
     }
 
     public function create()
@@ -78,18 +56,16 @@ class PermissionController extends Controller
 
     public function store(Request $request)
     {
-        $this->validate($request, [
+        // Nota: o $request->validate([...]) retorna só os campos que forem validados na lista
+        // usar o $request->all(); para pegar todos os campos
+        $permission = $request->validate([
           'name' => 'required',
           'description' => 'required',
         ]);
 
-        $permission = $request->all();
+        Permission::create($permission);
 
-        Permission::create($permission); //salva
-
-        Session::flash('create_permission', 'Permissão cadastrada com sucesso!');
-
-        return redirect(route('permissions.index'));
+        return redirect(route('permissions.index'))->with('message', 'Permissão cadastrada com sucesso!');
     }
 
 
@@ -99,10 +75,9 @@ class PermissionController extends Controller
             abort(403, 'Acesso negado.');
         }
 
-        // permissão que será exibido e pode ser excluido
-        $permission = Permission::findOrFail($id);
-
-        return view('admin.permissions.show', compact('permission'));
+        return view('admin.permissions.show', [
+            'permission' => Permission::findOrFail($id)
+        ]);
     }
 
     public function edit($id)
@@ -111,26 +86,21 @@ class PermissionController extends Controller
             abort(403, 'Acesso negado.');
         }
 
-        // usuário que será alterado
-        $permission = Permission::findOrFail($id);
-
-        return view('admin.permissions.edit', compact('permission'));
+        return view('admin.permissions.edit', [
+            'permission' => Permission::findOrFail($id)
+        ]);
     }
 
     public function update(Request $request, $id)
     {
-        $this->validate($request, [
+        $permission = $request->validate([
           'name' => 'required',
           'description' => 'required',
         ]);
 
-        $permission = Permission::findOrFail($id);
-            
-        $permission->update($request->all());
-        
-        Session::flash('edited_permission', 'Permissão alterada com sucesso!');
+        Permission::findOrFail($id)->update($permission);
 
-        return redirect(route('permissions.edit', $id));
+        return redirect(route('permissions.edit', $id))->with('message', 'Permissão alterada com sucesso!');
     }
 
     public function destroy($id)
@@ -141,9 +111,7 @@ class PermissionController extends Controller
 
         Permission::findOrFail($id)->delete();
 
-        Session::flash('deleted_permission', 'Permissão excluída com sucesso!');
-
-        return redirect(route('permissions.index'));
+        return redirect(route('permissions.index'))->with('message', 'Permissão excluída com sucesso!');
     }
 
     public function exportcsv()
@@ -152,12 +120,7 @@ class PermissionController extends Controller
             abort(403, 'Acesso negado.');
         }
 
-        # filtragem
-        $filter_name = (request()->has('name') ? request('name') : '');
-        
-        $filter_description = (request()->has('description') ? request('description') : '');
-
-        return Excel::download(new PermissionsExport($filter_name, $filter_description), 'Permissoes_' .  date("Y-m-d H:i:s") . '.csv', \Maatwebsite\Excel\Excel::CSV);
+        return Excel::download(new PermissionsExport(request(['name', 'description'])), 'Permissoes_' .  date("Y-m-d H:i:s") . '.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
     public function exportxls()
@@ -166,12 +129,7 @@ class PermissionController extends Controller
             abort(403, 'Acesso negado.');
         }
 
-        # filtragem
-        $filter_name = (request()->has('name') ? request('name') : '');
-        
-        $filter_description = (request()->has('description') ? request('description') : '');
-
-        return Excel::download(new PermissionsExport($filter_name, $filter_description), 'Permissoes_' .  date("Y-m-d H:i:s") . '.xlsx', \Maatwebsite\Excel\Excel::XLSX);
+        return Excel::download(new PermissionsExport(request(['name', 'description'])), 'Permissoes_' .  date("Y-m-d H:i:s") . '.xlsx', \Maatwebsite\Excel\Excel::XLSX);
     }
 
     public function exportpdf()
@@ -179,31 +137,10 @@ class PermissionController extends Controller
         if (Gate::denies('permission-export')) {
             abort(403, 'Acesso negado.');
         }
-
-        # tratamento dos filtros
-        $filter_name = (request()->has('name') ? request('name') : '');
         
-        $filter_description = (request()->has('description') ? request('description') : '');
-
-        # criação do dataset
-        $dataset = new Permission;
-
-        $dataset = $dataset->select('name', 'description');
-
-        if (!empty($filter_name)){
-            $dataset = $dataset->where('name', 'like', '%' . $filter_name . '%');    
-        }
-
-        if (!empty($filter_description)){
-            $dataset = $dataset->Where('description', 'like', '%' . $filter_description . '%');
-        }
-
-        $dataset = $dataset->get();
-
-        $pdf = PDF::loadView('admin.permissions.report', compact('dataset'));
-        
-        return $pdf->download('Permissoes_' .  date("Y-m-d H:i:s") . '.pdf');
-
+        return PDF::loadView('admin.permissions.report', [
+            'dataset' => Permission::orderBy('id', 'asc')->filter(request(['name', 'description']))->get()
+        ])->download('Permissoes_' .  date("Y-m-d H:i:s") . '.pdf');
     }
 
 }

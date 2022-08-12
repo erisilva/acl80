@@ -8,22 +8,9 @@
       <li class="breadcrumb-item active" aria-current="page"><a href="{{ route('roles.index') }}">Perfis</a></li>
     </ol>
   </nav>
-  @if(Session::has('deleted_role'))
-  <div class="alert alert-warning alert-dismissible fade show" role="alert">
-    <strong>Info!</strong>  {{ session('deleted_role') }}
-    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-      <span aria-hidden="true">&times;</span>
-    </button>
-  </div>
-  @endif
-  @if(Session::has('create_role'))
-  <div class="alert alert-warning alert-dismissible fade show" role="alert">
-    <strong>Info!</strong>  {{ session('create_role') }}
-    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-      <span aria-hidden="true">&times;</span>
-    </button>
-  </div>
-  @endif
+
+  <x-flash-message />
+
   <div class="btn-group py-1" role="group" aria-label="Opções">
     <a href="{{ route('roles.create') }}" class="btn btn-secondary btn-sm" role="button"><i class="bi bi-plus-circle"></i> Novo Registro</a>
     <button type="button" class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#modalFilter"><i class="bi bi-funnel"></i> Filtrar</button>
@@ -70,47 +57,24 @@
   <div class="container-fluid">
       {{ $roles->links() }}
   </div>
-  <!-- Janela de filtragem da consulta -->
-  <div class="modal fade" id="modalFilter" tabindex="-1" role="dialog" aria-labelledby="JanelaFiltro" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalCenterTitle"><i class="bi bi-funnel"></i> Filtro</h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <!-- Filtragem dos dados -->
-          <form method="GET" action="{{ route('roles.index') }}">
-            <div class="form-group">
-              <label for="name">Nome</label>
-              <input type="text" class="form-control" id="name" name="name" value="{{request()->input('name')}}">
-            </div>
-            <div class="form-group">
-              <label for="description">Descrição</label>
-              <input type="text" class="form-control" id="description" name="description" value="{{request()->input('description')}}">
-            </div>
-            <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> Pesquisar</button>
-            <a href="{{ route('roles.index') }}" class="btn btn-primary btn-sm" role="button">Limpar</a>
-          </form>
-          <br>
-          <!-- Seleção de número de resultados por página -->
-          <div class="form-group">
-            <select class="form-control" name="perpage" id="perpage">
-              @foreach($perpages as $perpage)
-              <option value="{{$perpage->valor}}"  {{($perpage->valor == session('perPage')) ? 'selected' : ''}}>{{$perpage->nome}}</option>
-              @endforeach
-            </select>
-          </div>
-        </div>     
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="bi bi-x-square"></i> Fechar</button>
-        </div>
-      </div>
-    </div>
-  </div>
 </div>
+
+<x-modal-filter :perpages="$perpages" >
+  <form method="GET" action="{{ route('roles.index') }}">
+    @csrf
+    <div class="form-group">
+      <label for="name">Nome</label>
+      <input type="text" class="form-control" id="name" name="name" value="{{request()->input('name')}}">
+    </div>
+    <div class="form-group">
+      <label for="description">Descrição</label>
+      <input type="text" class="form-control" id="description" name="description" value="{{request()->input('description')}}">
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> Pesquisar</button>
+    <a href="{{ route('roles.index') }}" class="btn btn-primary btn-sm" role="button">Limpar</a>
+  </form>
+</x-modal-filter>  
+
 @endsection
 @section('script-footer')
 <script>

@@ -120,6 +120,7 @@ Login: leitor@mail.com senha: 123456, somente consulta.
 
 ```
 php artisan serve
+```
 
 ## Licenças
 
