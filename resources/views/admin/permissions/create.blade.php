@@ -16,27 +16,22 @@
     <div class="form-row">
       <div class="form-group col-md-6">
         <label for="name">Nome</label>
-        <input type="text" class="form-control{{ $errors->has('name') ? ' is-invalid' : '' }}" name="name" value="{{ old('name') ?? '' }}">
-        @if ($errors->has('name'))
-        <div class="invalid-feedback">
-        {{ $errors->first('name') }}
-        </div>
-        @endif
+        <input type="text" class="form-control @error('name') is-invalid @enderror" name="name" value="{{ old('name') ?? '' }}">
+        @error('name')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
       </div>
       <div class="form-group col-md-6">
         <label for="description">Descrição</label>
-        <input type="text" class="form-control{{ $errors->has('description') ? ' is-invalid' : '' }}" name="description" value="{{ old('description') ?? '' }}">
-        @if ($errors->has('description'))
-        <div class="invalid-feedback">
-        {{ $errors->first('description') }}
-        </div>
-        @endif
+        <input type="text" class="form-control @error('description') is-invalid @enderror" name="description" value="{{ old('description') ?? '' }}">
+        @error('description')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
       </div>
     </div>    
     <button type="submit" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Incluir Permissão</button>
   </form>
-  <div class="float-right">
-    <a href="{{ route('permissions.index') }}" class="btn btn-secondary btn-sm" role="button"><i class="bi bi-arrow-left-square"></i> Voltar</i></a>
-  </div>
 </div>
+
+<x-btn-back route="permissions.index" />
 @endsection

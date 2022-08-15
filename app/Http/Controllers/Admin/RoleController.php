@@ -117,31 +117,35 @@ class RoleController extends Controller
           'description' => 'required',
         ]);
 
-        $role = Role::findOrFail($id);
+        DB::beginTransaction();
 
-        // recebe todos valores entrados no formulário
-        $input = $request->all();
+        try{
 
-        // remove todos as permissões vinculadas a esse operador
-        $permissions = $role->permissions;
-        if(count($permissions)){
-            foreach ($permissions as $key => $value) {
-               $role->permissions()->detach($value->id);
+            $role = Role::findOrFail($id);
+
+            // recebe todos valores entrados no formulário
+            $input = $request->all();
+
+            // remove todos as permissões vinculadas a esse operador
+            $role->permissions()->detach();
+
+            // vincula os novas permissões desse operador
+            if(isset($input['permissions']) && count($input['permissions'])){
+                foreach ($input['permissions'] as $key => $value) {
+                   $role->permissions()->attach($value);
+                }
             }
-        }
+                
+            $role->update($input);
 
-        // vincula os novas permissões desse operador
-        if(isset($input['permissions']) && count($input['permissions'])){
-            foreach ($input['permissions'] as $key => $value) {
-               $role->permissions()->attach($value);
-            }
-        }
-            
-        $role->update($input);
-        
-        Session::flash('edited_role', 'Perfil alterado com sucesso!');
+            DB::commit();
 
-        return redirect(route('roles.edit', $id));
+            return redirect(route('roles.edit', $id))->with('message', 'Perfil alterado com sucesso!');
+
+        }catch(\Exception $e){
+            DB::rollback();
+            return redirect()->route('roles.index')->with('message','Erro ao alterar perfil');
+        }
     }
 
     public function destroy($id)
@@ -152,9 +156,7 @@ class RoleController extends Controller
 
         Role::findOrFail($id)->delete();
 
-        Session::flash('deleted_role', 'Permissão excluída com sucesso!');
-
-        return redirect(route('roles.index'));
+        return redirect(route('roles.index'))->with('message', 'Perfil excluído com sucesso!');
     }
 
     public function exportcsv()
@@ -163,12 +165,7 @@ class RoleController extends Controller
             abort(403, 'Acesso negado.');
         }
 
-        # filtragem
-        $filter_name = (request()->has('name') ? request('name') : '');
-        
-        $filter_description = (request()->has('description') ? request('description') : '');
-
-        return Excel::download(new RolesExport($filter_name, $filter_description), 'Perfis_' .  date("Y-m-d H:i:s") . '.csv', \Maatwebsite\Excel\Excel::CSV);
+        return Excel::download(new RolesExport(request(['name','description'])), 'Perfis_' .  date("Y-m-d H:i:s") . '.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
     public function exportxls()
@@ -177,12 +174,7 @@ class RoleController extends Controller
             abort(403, 'Acesso negado.');
         }
 
-        # filtragem
-        $filter_name = (request()->has('name') ? request('name') : '');
-        
-        $filter_description = (request()->has('description') ? request('description') : '');
-
-        return Excel::download(new RolesExport($filter_name, $filter_description), 'Perfis_' .  date("Y-m-d H:i:s") . '.xlsx', \Maatwebsite\Excel\Excel::XLSX);
+        return Excel::download(new RolesExport(request(['name','description'])), 'Perfis_' .  date("Y-m-d H:i:s") . '.xlsx', \Maatwebsite\Excel\Excel::XLSX);
     }
 
     public function exportpdf()
@@ -191,28 +183,8 @@ class RoleController extends Controller
             abort(403, 'Acesso negado.');
         }
 
-        # tratamento dos filtros
-        $filter_name = (request()->has('name') ? request('name') : '');
-        
-        $filter_description = (request()->has('description') ? request('description') : '');
-
-        # criação do dataset
-        $dataset = new Role;
-
-        $dataset = $dataset->select('name', 'description');
-
-        if (!empty($filter_name)){
-            $dataset = $dataset->where('name', 'like', '%' . $filter_name . '%');    
-        }
-
-        if (!empty($filter_description)){
-            $dataset = $dataset->Where('description', 'like', '%' . $filter_description . '%');
-        }
-
-        $dataset = $dataset->get();
-
-        $pdf = PDF::loadView('admin.roles.report', compact('dataset'));
-        
-        return $pdf->download('Perfis_' .  date("Y-m-d H:i:s") . '.pdf');
+        return PDF::loadView('admin.roles.report', [
+            'dataset' => Role::orderBy('id', 'asc')->filter(request(['name', 'description']))->get()
+        ])->download('Perfis_' .  date("Y-m-d H:i:s") . '.pdf');
     }     
 }

@@ -68,7 +68,6 @@ class PermissionController extends Controller
         return redirect(route('permissions.index'))->with('message', 'Permissão cadastrada com sucesso!');
     }
 
-
     public function show($id)
     {
         if (Gate::denies('permission-show')) {

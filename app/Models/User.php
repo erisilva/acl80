@@ -43,7 +43,22 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
- /**
+    /**
+     * Filtragem dos operadores
+     *
+     * @var $query, array $filters
+     */
+    public function scopeFilter($query, array $filters){
+        if($filters['name'] ?? false) {
+            $query->where('name', 'like', '%' . request('name') . '%');
+        }
+
+        if($filters['email'] ?? false) {
+            $query->where('email', 'like', '%' . request('email') . '%');
+        }
+    }
+
+    /**
      * Verifica se o operador está ativo.
      *
      * @var none

@@ -21,27 +21,15 @@ class UsersExport implements FromQuery, WithHeadings
     * 
     */
 
-    public function __construct($name, $email)
+    public function __construct($filter)
     {
-        $this->name = $name;
-        $this->email = $email;
+        $this->filter = $filter;
     }
 
 
     public function query()
     {
-        $result = User::query()->select('name', 'email');
-
-        if (!empty($this->name)){
-            $result = $result->where('name', 'like', '%' . $this->name . '%');    
-        }
-
-        if (!empty($this->email)){
-            $result = $result->Where('email', 'like', '%' . $this->email . '%');
-        }
-
-
-        return $result;
+        return User::query()->select('name', 'email')->orderBy('name', 'asc')->filter($this->filter);
     }
 
     public function headings(): array

@@ -33,41 +33,17 @@ class UserController extends Controller
     {
         if (Gate::denies('user-index')) {
             abort(403, 'Acesso negado.');
-        }
+        }     
 
-        $users = new User;
-
-        // filtros
-        if (request()->has('name')){
-            $users = $users->where('name', 'like', '%' . request('name') . '%');
-        }
-
-        if (request()->has('email')){
-            $users = $users->where('email', 'like', '%' . request('email') . '%');
-        }
-
-        // ordena
-        $users = $users->orderBy('name', 'asc');        
-
-        // se a requisição tiver um novo valor para a quantidade
-        // de páginas por visualização ele altera aqui
         if(request()->has('perpage')) {
             session(['perPage' => request('perpage')]);
         }
 
-        // consulta a tabela perpage para ter a lista de
-        // quantidades de paginação
-        $perpages = Perpage::orderBy('valor')->get();
-
-        // paginação
-        $users = $users->paginate(session('perPage', '5'))->appends([          
-            'name' => request('name'),
-            'email' => request('email'),           
-            ]);
-
-        return view('admin.users.index', compact('users', 'perpages'));
+        return view('admin.users.index', [
+            'users' => User::orderBy('name', 'asc')->filter(request(['name', 'email']))->paginate(session('perPage', '5'))->appends(request(['name', 'email'])),
+            'perpages' => Perpage::orderBy('valor')->get()
+        ]);
     }
-
 
     public function create()
     {
@@ -75,12 +51,10 @@ class UserController extends Controller
             abort(403, 'Acesso negado.');
         }
 
-        // listagem de perfis (roles)
-        $roles = Role::orderBy('description','asc')->get();
-
-        return view('admin.users.create', compact('roles'));
+        return view('admin.users.create', [
+            'roles' => Role::orderBy('description','asc')->get() 
+        ]);
     }
-
 
     public function store(Request $request)
     {
@@ -90,25 +64,32 @@ class UserController extends Controller
           'password' => 'required|min:6|confirmed'
         ]);
 
-        $user = $request->all();
-        $user['active'] = 'Y'; // torna o novo registro ativo
-        $user['password'] = Hash::make($user['password']); // criptografa a senha
+        DB::beginTransaction();
 
-        $newUser = User::create($user); //salva
+        try{
 
-        // salva os perfis (roles)
-        if(isset($user['roles']) && count($user['roles'])){
-            foreach ($user['roles'] as $key => $value) {
-                $newUser->roles()->attach($value);
+            $user = $request->all();
+            $user['active'] = 'Y'; // torna o novo registro ativo
+            $user['password'] = Hash::make($user['password']); // criptografa a senha
+
+            $newUser = User::create($user); //salva
+
+            // salva os perfis (roles)
+            if(isset($user['roles']) && count($user['roles'])){
+                foreach ($user['roles'] as $key => $value) {
+                    $newUser->roles()->attach($value);
+                }
             }
 
-        }    
+            DB::commit();
 
-        Session::flash('create_user', 'Operador cadastrado com sucesso!');
+            return redirect(route('users.index'))->with('message', 'Operador cadastrado com sucesso!');
 
-        return redirect(route('users.index'));
+        }catch(\Exception $e){
+            DB::rollback();
+            return redirect()->route('users.index')->with('message','Erro ao incluir');
+        }
     }
-
 
     public function show($id)
     {
@@ -117,10 +98,9 @@ class UserController extends Controller
             abort(403, 'Acesso negado.');
         }
 
-        // usuário que será exibido e pode ser excluido
-        $user = User::findOrFail($id);
-
-        return view('admin.users.show', compact('user'));
+        return view('admin.users.show', [
+            'user' => User::findOrFail($id)
+        ]);
     }
 
 
@@ -130,62 +110,60 @@ class UserController extends Controller
             abort(403, 'Acesso negado.');
         }
 
-        // usuário que será alterado
-        $user = User::findOrFail($id);
-
-        // listagem de perfis (roles)
-        $roles = Role::orderBy('description','asc')->get();
-
-        return view('admin.users.edit', compact('user', 'roles'));
+        return view('admin.users.edit',[
+            'user' => User::findOrFail($id),
+            'roles' => Role::orderBy('description','asc')->get()
+        ]);
     }
-
 
     public function update(Request $request, $id)
     {
         $this->validate($request, [
           'name' => 'required',
-          'email' => 'required|email',
+          'password' => 'nullable|min:6'
         ]);
 
-        $user = User::findOrFail($id);
+        DB::beginTransaction();
 
-        // atualiza a senha do usuário se esse campo tiver sido preenchido
-        if ($request->has('password') && (request('password') != "")) {
-            $input = $request->all();
-            $input['password'] = Hash::make($input['password']);
-        } else {
-            $input = $request->except('password');
-        }   
+        try{
+            $user = User::findOrFail($id);
 
-        // configura se operador está habilitado ou não a usar o sistema
-        if (isset($input['active'])) {
-            $input['active'] = 'Y';
-        } else {
-            $input['active'] = 'N';
-        }
+            // atualiza a senha do usuário se esse campo tiver sido preenchido
+            if ($request->has('password') && (request('password') != "")) {
+                $input = $request->all();
+                $input['password'] = Hash::make($input['password']);
+            } else {
+                $input = $request->except('password');
+            }   
 
-        // remove todos os perfis vinculados a esse operador
-        $roles = $user->roles;
-        if(count($roles)){
-            foreach ($roles as $key => $value) {
-               $user->roles()->detach($value->id);
+            // configura se operador está habilitado ou não a usar o sistema
+            if (isset($input['active'])) {
+                $input['active'] = 'Y';
+            } else {
+                $input['active'] = 'N';
             }
-        }
 
-        // vincula os novos perfis desse operador
-        if(isset($input['roles']) && count($input['roles'])){
-            foreach ($input['roles'] as $key => $value) {
-               $user->roles()->attach($value);
+            // remove todos os perfis vinculados a esse operador
+            $user->roles()->detach();
+
+            // vincula os novos perfis desse operador
+            if(isset($input['roles']) && count($input['roles'])){
+                foreach ($input['roles'] as $key => $value) {
+                   $user->roles()->attach($value);
+                }
             }
+
+            $user->update($input);
+
+            DB::commit();
+
+            return redirect(route('users.edit', $id))->with('message', 'Operador alterado com sucesso!');
+
+        }catch(\Exception $e){
+            DB::rollback();
+            return redirect()->route('users.index')->with('message','Erro ao alterar dados do operador');
         }
-
-        $user->update($input);
-        
-        Session::flash('edited_user', 'Operador alterado com sucesso!');
-
-        return redirect(route('users.edit', $id));
     }
-
 
     public function destroy($id)
     {
@@ -195,23 +173,16 @@ class UserController extends Controller
 
         User::findOrFail($id)->delete();
 
-        Session::flash('deleted_user', 'Operador excluído com sucesso!');
-
-        return redirect(route('users.index'));
+        return redirect(route('users.index'))->with('message', 'Operador excluído com sucesso!');
     }
 
-public function exportcsv()
+    public function exportcsv()
     {
         if (Gate::denies('user-export')) {
             abort(403, 'Acesso negado.');
         }
 
-        # filtragem
-        $filter_name = (request()->has('name') ? request('name') : '');
-        
-        $filter_email = (request()->has('email') ? request('email') : '');
-
-        return Excel::download(new UsersExport($filter_name, $filter_email), 'Operadores_' .  date("Y-m-d H:i:s") . '.csv', \Maatwebsite\Excel\Excel::CSV);
+        return Excel::download(new UsersExport(request(['name','email'])), 'Operadores_' .  date("Y-m-d H:i:s") . '.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
     public function exportxls()
@@ -220,12 +191,7 @@ public function exportcsv()
             abort(403, 'Acesso negado.');
         }
 
-        # filtragem
-        $filter_name = (request()->has('name') ? request('name') : '');
-        
-        $filter_email = (request()->has('email') ? request('email') : '');
-
-        return Excel::download(new UsersExport($filter_name, $filter_email), 'Operadores_' .  date("Y-m-d H:i:s") . '.xlsx', \Maatwebsite\Excel\Excel::XLSX);
+        return Excel::download(new UsersExport(request(['name','email'])), 'Operadores_' .  date("Y-m-d H:i:s") . '.xlsx', \Maatwebsite\Excel\Excel::XLSX);
     }
 
     public function exportpdf()
@@ -234,28 +200,8 @@ public function exportcsv()
             abort(403, 'Acesso negado.');
         }
 
-        # tratamento dos filtros
-        $filter_name = (request()->has('name') ? request('name') : '');
-        
-        $filter_email = (request()->has('email') ? request('description') : '');
-
-        # criação do dataset
-        $dataset = new User;
-
-        $dataset = $dataset->select('name', 'email');
-
-        if (!empty($filter_name)){
-            $dataset = $dataset->where('name', 'like', '%' . $filter_name . '%');    
-        }
-
-        if (!empty($filter_email)){
-            $dataset = $dataset->Where('email', 'like', '%' . $filter_email . '%');
-        }
-
-        $dataset = $dataset->get();
-
-        $pdf = PDF::loadView('admin.users.report', compact('dataset'));
-        
-        return $pdf->download('Users_' .  date("Y-m-d H:i:s") . '.pdf');
+        return PDF::loadView('admin.users.report', [
+            'dataset' => User::orderBy('name', 'asc')->filter(request(['name', 'email']))->get()
+        ])->download('Users_' .  date("Y-m-d H:i:s") . '.pdf');
     } 
 }

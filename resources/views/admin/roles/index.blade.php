@@ -11,23 +11,12 @@
 
   <x-flash-message />
 
-  <div class="btn-group py-1" role="group" aria-label="Opções">
-    <a href="{{ route('roles.create') }}" class="btn btn-secondary btn-sm" role="button"><i class="bi bi-plus-circle"></i> Novo Registro</a>
-    <button type="button" class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#modalFilter"><i class="bi bi-funnel"></i> Filtrar</button>
-    <div class="btn-group" role="group">
-      <button id="btnGroupDropOptions" type="button" class="btn btn-secondary dropdown-toggle btn-sm" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-       <i class="bi bi-gear"></i> Opções
-      </button>
-      <div class="dropdown-menu" aria-labelledby="btnGroupDropOptions">
-        <a class="dropdown-item" href="{{ route('roles.index') }}"><i class="bi bi-layout-sidebar"></i> Perfis</a>
-        <a class="dropdown-item" href="{{ route('permissions.index') }}"><i class="bi bi-layout-sidebar"></i> Permissões</a>
-        <div class="dropdown-divider"></div>
-        <a class="dropdown-item" href="#" id="btnExportarXLS"><i class="bi bi-file-earmark-spreadsheet-fill"></i> Exportar Planilha Excel</a>
-        <a class="dropdown-item" href="#" id="btnExportarCSV"><i class="bi bi-file-earmark-spreadsheet-fill"></i> Exportar Planilha CSV</a>
-        <a class="dropdown-item" href="#" id="btnExportarPDF"><i class="bi bi-file-pdf-fill"></i> Exportar PDF</a>
-      </div>
-    </div>
-  </div>
+  <x-btn-group route="roles.create">
+    <a class="dropdown-item" href="{{ route('roles.index') }}"><i class="bi bi-layout-sidebar"></i> Perfis</a>
+    <a class="dropdown-item" href="{{ route('permissions.index') }}"><i class="bi bi-layout-sidebar"></i> Permissões</a>
+    <div class="dropdown-divider"></div>
+  </x-btn-group>
+
   <div class="table-responsive">
     <table class="table table-striped">
         <thead>
@@ -59,7 +48,7 @@
   </div>
 </div>
 
-<x-modal-filter :perpages="$perpages" >
+<x-modal-filter class="modal-lg" :perpages="$perpages" >
   <form method="GET" action="{{ route('roles.index') }}">
     @csrf
     <div class="form-group">

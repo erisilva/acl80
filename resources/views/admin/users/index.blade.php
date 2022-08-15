@@ -7,39 +7,15 @@
       <li class="breadcrumb-item active" aria-current="page"><a href="{{ route('users.index') }}">Lista de Operadores</a></li>
     </ol>
   </nav>
-  @if(Session::has('deleted_user'))
-  <div class="alert alert-warning alert-dismissible fade show" role="alert">
-    <strong>Info!</strong>  {{ session('deleted_user') }}
-    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-      <span aria-hidden="true">&times;</span>
-    </button>
-  </div>
-  @endif
-  @if(Session::has('create_user'))
-  <div class="alert alert-warning alert-dismissible fade show" role="alert">
-    <strong>Info!</strong>  {{ session('create_user') }}
-    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-      <span aria-hidden="true">&times;</span>
-    </button>
-  </div>
-  @endif
-  <div class="btn-group py-1" role="group" aria-label="Opções">
-    <a href="{{ route('users.create') }}" class="btn btn-secondary btn-sm" role="button"><i class="bi bi-person-plus-fill"></i> Novo Registro</a>
-    <button type="button" class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#modalFilter"><i class="bi bi-funnel"></i> Filtrar</button>
-    <div class="btn-group" role="group">
-      <button id="btnGroupDropOptions" type="button" class="btn btn-secondary dropdown-toggle btn-sm" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-        <i class="bi bi-gear"></i> Opções
-      </button>
-      <div class="dropdown-menu" aria-labelledby="btnGroupDropOptions">
-        <a class="dropdown-item" href="{{ route('roles.index') }}"><i class="bi bi-layout-sidebar"></i> Perfis</a>
-        <a class="dropdown-item" href="{{ route('permissions.index') }}"><i class="bi bi-layout-sidebar"></i> Permissões</a>
-        <div class="dropdown-divider"></div>
-        <a class="dropdown-item" href="#" id="btnExportarXLS"><i class="bi bi-file-earmark-spreadsheet-fill"></i> Exportar Planilha Excel</a>
-        <a class="dropdown-item" href="#" id="btnExportarCSV"><i class="bi bi-file-earmark-spreadsheet-fill"></i> Exportar Planilha CSV</a>
-        <a class="dropdown-item" href="#" id="btnExportarPDF"><i class="bi bi-file-pdf-fill"></i> Exportar PDF</a>
-      </div>
-    </div>
-  </div>
+
+  <x-flash-message />
+
+  <x-btn-group route="users.create">
+    <a class="dropdown-item" href="{{ route('roles.index') }}"><i class="bi bi-layout-sidebar"></i> Perfis</a>
+    <a class="dropdown-item" href="{{ route('permissions.index') }}"><i class="bi bi-layout-sidebar"></i> Permissões</a>
+    <div class="dropdown-divider"></div>
+  </x-btn-group>
+
   <div class="table-responsive">
     <table class="table table-striped">
         <thead>
@@ -75,47 +51,24 @@
   <div class="container-fluid">
       {{ $users->links() }}
   </div>
-  <!-- Janela de filtragem da consulta -->
-  <div class="modal fade" id="modalFilter" tabindex="-1" role="dialog" aria-labelledby="JanelaFiltro" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalCenterTitle"><i class="bi bi-funnel"></i> Filtro</h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <!-- Filtragem dos dados -->
-          <form method="GET" action="{{ route('users.index') }}">
-            <div class="form-group">
-              <label for="name">Nome</label>
-              <input type="text" class="form-control" id="name" name="name" value="{{request()->input('name')}}">
-            </div>
-            <div class="form-group">
-              <label for="email">E-mail</label>
-              <input type="text" class="form-control" id="email" name="email" value="{{request()->input('email')}}">
-            </div>
-            <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> Pesquisar</button>
-            <a href="{{ route('users.index') }}" class="btn btn-primary btn-sm" role="button">Limpar</a>
-          </form>
-          <br>
-          <!-- Seleção de número de resultados por página -->
-          <div class="form-group">
-            <select class="form-control" name="perpage" id="perpage">
-              @foreach($perpages as $perpage)
-              <option value="{{$perpage->valor}}"  {{($perpage->valor == session('perPage')) ? 'selected' : ''}}>{{$perpage->nome}}</option>
-              @endforeach
-            </select>
-          </div>
-        </div>     
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="bi bi-x-square"></i> Fechar</button>
-        </div>
-      </div>
-    </div>
-  </div>
 </div>
+
+<x-modal-filter class="modal-lg" :perpages="$perpages" >
+  <form method="GET" action="{{ route('users.index') }}">
+    @csrf
+    <div class="form-group">
+      <label for="name">Nome</label>
+      <input type="text" class="form-control" id="name" name="name" value="{{request()->input('name')}}">
+    </div>
+    <div class="form-group">
+      <label for="email">E-mail</label>
+      <input type="text" class="form-control" id="email" name="email" value="{{request()->input('email')}}">
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> Pesquisar</button>
+    <a href="{{ route('users.index') }}" class="btn btn-primary btn-sm" role="button">Limpar</a>
+  </form>
+</x-modal-filter> 
+
 @endsection
 @section('script-footer')
 <script>

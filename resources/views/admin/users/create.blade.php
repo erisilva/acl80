@@ -15,32 +15,26 @@
     <div class="form-row">
       <div class="form-group col-md-6">
         <label for="name">Nome</label>
-        <input type="text" class="form-control{{ $errors->has('name') ? ' is-invalid' : '' }}" name="name" value="{{ old('name') ?? '' }}">
-        @if ($errors->has('name'))
-        <div class="invalid-feedback">
-        {{ $errors->first('name') }}
-        </div>
-        @endif
+        <input type="text" class="form-control @error('name') is-invalid @enderror" name="name" value="{{ old('name') ?? '' }}">
+        @error('name')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
       </div>
       <div class="form-group col-md-6">
         <label for="email">E-mail</label>
-        <input type="email" class="form-control{{ $errors->has('email') ? ' is-invalid' : '' }}" name="email" value="{{ old('email') ?? '' }}">
-        @if ($errors->has('email'))
-        <div class="invalid-feedback">
-        {{ $errors->first('email') }}
-        </div>
-        @endif
+        <input type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') ?? '' }}">
+        @error('email')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
       </div>
     </div>
     <div class="form-row">
       <div class="form-group col-md-6">
         <label for="password">Senha</label>
-        <input type="password" class="form-control{{ $errors->has('password') ? ' is-invalid' : '' }}" name="password">
-        @if ($errors->has('password'))
-        <div class="invalid-feedback">
-        {{ $errors->first('password') }}
-        </div>
-        @endif
+        <input type="password" class="form-control  @error('password') is-invalid @enderror" name="password">
+        @error('password')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
       </div>
       <div class="form-group col-md-6">
         <label for="password_confirmation">Confirme a senha</label>
@@ -73,9 +67,6 @@
     <button type="submit" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Incluir Operador</button>
   </form>
 </div>
-<div class="container">
-  <div class="float-right">
-    <a href="{{ route('users.index') }}" class="btn btn-secondary btn-sm" role="button"><i class="bi bi-arrow-left-square"></i> Voltar</i></a>
-  </div>
-</div>
+
+<x-btn-back route="users.index" />
 @endsection

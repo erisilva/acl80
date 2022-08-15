@@ -9,58 +9,24 @@
     </ol>
   </nav>
 </div>
-<div class="container">
 
-  <div class="card">
-    <div class="card-header">
-      Operador
-    </div>
-    <div class="card-body">
-      <ul class="list-group list-group-flush">
-        <li class="list-group-item">Nome: {{$user->name}}</li>
-        <li class="list-group-item">E-mail: {{$user->email}}</li>
-        <li class="list-group-item">Ativo: {{($user->active == 'Y') ? 'Sim' : 'Não'}} </li>
-      </ul>
-    </div>
+<x-card title="Operador">
+  <ul class="list-group list-group-flush">
+    <li class="list-group-item">Nome: {{$user->name}}</li>
+    <li class="list-group-item">E-mail: {{$user->email}}</li>
+    <li class="list-group-item">Ativo: {{($user->active == 'Y') ? 'Sim' : 'Não'}} </li>
+  </ul>
+</x-card>
 
-    <div class="card-footer text-right">
-      <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#modalLixeira"><i class="bi bi-trash"></i> Enviar para Lixeira</button>
-      <a href="{{ route('users.index') }}" class="btn btn-primary" role="button"><i class="bi bi-arrow-left-square"></i> Voltar</i></a>      
-    </div>
+<x-btn-back route="users.index" />
 
-  </div>  
-  <br>
+<x-modal-trash>
+  <form method="post" action="{{route('users.destroy', $user->id)}}">
+    @csrf
+    @method('DELETE')
+    <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Apagar Registro</button>
+  </form>  
+</x-modal-trash>
 
-  <div class="modal fade" id="modalLixeira" tabindex="-1" role="dialog" aria-labelledby="JanelaProfissional" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalCenterTitle"><i class="bi bi-patch-question"></i> Apagar Registro</h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="alert alert-danger" role="alert">
-            <p><strong>Atenção!</strong> Ao excluir esse registro todo e qualquer vínculo que ele tiver com outros dados será excluído.</p>
-            <h2>Confirma?</h2>
-          </div>
-          <form method="post" action="{{route('users.destroy', $user->id)}}">
-            @csrf
-            @method('DELETE')
-            <div class="form-group">
-              <label for="motivo">Motivo</label>  
-              <input type="text" class="form-control" name="motivo" id="motivo" value="">
-            </div>
-            <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Apagar Registro</button>
-          </form>
-        </div>     
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="bi bi-x-square"></i> Cancelar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
 @endsection
