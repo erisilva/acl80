@@ -15,6 +15,10 @@
     <a class="dropdown-item" href="{{ route('roles.index') }}"><i class="bi bi-layout-sidebar"></i> Perfis</a>
     <a class="dropdown-item" href="{{ route('permissions.index') }}"><i class="bi bi-layout-sidebar"></i> Permissões</a>
     <div class="dropdown-divider"></div>
+    <a class="dropdown-item" href="{{route('permissions.export.xls', ['description' => request()->input('description'), 'name' => request()->input('name')])}}"><i class="bi bi-file-earmark-spreadsheet-fill"></i> Exportar Planilha Excel</a>
+    <a class="dropdown-item" href="{{route('permissions.export.csv', ['description' => request()->input('description'), 'name' => request()->input('name')])}}"><i class="bi bi-file-earmark-spreadsheet-fill"></i> Exportar Planilha CSV</a>
+    <a class="dropdown-item" href="{{route('permissions.export.pdf', ['description' => request()->input('description'), 'name' => request()->input('name')])}}"><i class="bi bi-file-pdf-fill"></i> Exportar PDF</a>
+
   </x-btn-group>
 
   <div class="table-responsive">
@@ -35,7 +39,8 @@
                   <div class="btn-group" role="group">
                     <a href="{{route('permissions.edit', $permission->id)}}" class="btn btn-primary btn-sm" role="button"><i class="bi bi-pencil-square"></i></a>
                     <a href="{{route('permissions.show', $permission->id)}}" class="btn btn-primary btn-sm" role="button"><i class="bi bi-trash"></i></a>
-                  </div>
+
+                 </div>
                 </td>
             </tr>    
             @endforeach                                                 
@@ -73,24 +78,6 @@ $(document).ready(function(){
         
         window.open("{{ route('permissions.index') }}" + "?perpage=" + perpage,"_self");
     });
-
-    $('#btnExportarCSV').on('click', function(){
-        var filtro_name = $('input[name="name"]').val();
-        var filtro_description = $('input[name="description"]').val();
-        window.open("{{ route('permissions.export.csv') }}" + "?name=" + filtro_name + "&description=" + filtro_description,"_self");
-    });
-
-    $('#btnExportarXLS').on('click', function(){
-        var filtro_name = $('input[name="name"]').val();
-        var filtro_description = $('input[name="description"]').val();
-        window.open("{{ route('permissions.export.xls') }}" + "?name=" + filtro_name + "&description=" + filtro_description,"_self");
-    });
-
-    $('#btnExportarPDF').on('click', function(){
-        var filtro_name = $('input[name="name"]').val();
-        var filtro_description = $('input[name="description"]').val();
-        window.open("{{ route('permissions.export.pdf') }}" + "?name=" + filtro_name + "&description=" + filtro_description,"_self");
-    });
-}); 
+});
 </script>
 @endsection

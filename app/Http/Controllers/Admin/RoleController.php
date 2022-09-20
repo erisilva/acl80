@@ -6,12 +6,8 @@ use App\Models\Role; // Perfil
 use App\Models\Permission; // Permissões
 use App\Models\Perpage;
 
-use Response;
-
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
 
 use App\Exports\RolesExport;
@@ -30,10 +26,8 @@ class RoleController extends Controller
 
     public function index()
     {
-        if (Gate::denies('role-index')) {
-            abort(403, 'Acesso negado.');
-        }
-
+        $this->authorize('role-index');
+        
         if(request()->has('perpage')) {
             session(['perPage' => request('perpage')]);
         }
@@ -46,10 +40,8 @@ class RoleController extends Controller
 
     public function create()
     {
-        if (Gate::denies('role-create')) {
-            abort(403, 'Acesso negado.');
-        }
-
+        $this->authorize('role-create');
+        
         return view('admin.roles.create', [
             'permissions' => Permission::orderBy('name','asc')->get()
         ]);
@@ -89,9 +81,7 @@ class RoleController extends Controller
 
     public function show($id)
     {
-        if (Gate::denies('role-show')) {
-            abort(403, 'Acesso negado.');
-        }
+        $this->authorize('role-show');
 
         return view('admin.roles.show', [
             'role' => Role::findOrFail($id)
@@ -100,9 +90,7 @@ class RoleController extends Controller
 
     public function edit($id)
     {
-        if (Gate::denies('role-edit')) {
-            abort(403, 'Acesso negado.');
-        }
+        $this->authorize('role-edit');
 
         return view('admin.roles.edit', [
             'role' => Role::findOrFail($id),
@@ -150,9 +138,7 @@ class RoleController extends Controller
 
     public function destroy($id)
     {
-        if (Gate::denies('role-delete')) {
-            abort(403, 'Acesso negado.');
-        }
+        $this->authorize('role-delete');
 
         Role::findOrFail($id)->delete();
 
@@ -161,27 +147,21 @@ class RoleController extends Controller
 
     public function exportcsv()
     {
-        if (Gate::denies('role-export')) {
-            abort(403, 'Acesso negado.');
-        }
+        $this->authorize('role-export');
 
         return Excel::download(new RolesExport(request(['name','description'])), 'Perfis_' .  date("Y-m-d H:i:s") . '.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
     public function exportxls()
     {
-        if (Gate::denies('role-export')) {
-            abort(403, 'Acesso negado.');
-        }
+        $this->authorize('role-export');
 
         return Excel::download(new RolesExport(request(['name','description'])), 'Perfis_' .  date("Y-m-d H:i:s") . '.xlsx', \Maatwebsite\Excel\Excel::XLSX);
     }
 
     public function exportpdf()
     {
-        if (Gate::denies('role-export')) {
-            abort(403, 'Acesso negado.');
-        }
+        $this->authorize('role-export');
 
         return PDF::loadView('admin.roles.report', [
             'dataset' => Role::orderBy('id', 'asc')->filter(request(['name', 'description']))->get()

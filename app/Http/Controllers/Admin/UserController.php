@@ -6,12 +6,9 @@ use App\Models\User;
 use App\Models\Perpage;
 use App\Models\Role;
 
-use Response;
-
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
 
@@ -22,7 +19,6 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class UserController extends Controller
 {
-
     public function __construct()
     {
         $this->middleware(['middleware' => 'auth']);
@@ -31,9 +27,7 @@ class UserController extends Controller
 
     public function index()
     {
-        if (Gate::denies('user-index')) {
-            abort(403, 'Acesso negado.');
-        }     
+        $this->authorize('user-index');
 
         if(request()->has('perpage')) {
             session(['perPage' => request('perpage')]);
@@ -47,9 +41,7 @@ class UserController extends Controller
 
     public function create()
     {
-        if (Gate::denies('user-create')) {
-            abort(403, 'Acesso negado.');
-        }
+        $this->authorize('user-create');
 
         return view('admin.users.create', [
             'roles' => Role::orderBy('description','asc')->get() 
@@ -93,11 +85,8 @@ class UserController extends Controller
 
     public function show($id)
     {
-        // verifica o acesso
-        if (Gate::denies('user-show')) {
-            abort(403, 'Acesso negado.');
-        }
-
+        $this->authorize('user-show');
+        
         return view('admin.users.show', [
             'user' => User::findOrFail($id)
         ]);
@@ -106,9 +95,7 @@ class UserController extends Controller
 
     public function edit($id)
     {
-        if (Gate::denies('user-edit')) {
-            abort(403, 'Acesso negado.');
-        }
+        $this->authorize('user-edit');        
 
         return view('admin.users.edit',[
             'user' => User::findOrFail($id),
@@ -167,9 +154,7 @@ class UserController extends Controller
 
     public function destroy($id)
     {
-        if (Gate::denies('user-delete')) {
-            abort(403, 'Acesso negado.');
-        }
+        $this->authorize('user-delete');
 
         User::findOrFail($id)->delete();
 
@@ -178,27 +163,21 @@ class UserController extends Controller
 
     public function exportcsv()
     {
-        if (Gate::denies('user-export')) {
-            abort(403, 'Acesso negado.');
-        }
+        $this->authorize('user-export');
 
         return Excel::download(new UsersExport(request(['name','email'])), 'Operadores_' .  date("Y-m-d H:i:s") . '.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
     public function exportxls()
     {
-        if (Gate::denies('user-export')) {
-            abort(403, 'Acesso negado.');
-        }
+        $this->authorize('user-export');
 
         return Excel::download(new UsersExport(request(['name','email'])), 'Operadores_' .  date("Y-m-d H:i:s") . '.xlsx', \Maatwebsite\Excel\Excel::XLSX);
     }
 
     public function exportpdf()
     {
-        if (Gate::denies('user-export')) {
-            abort(403, 'Acesso negado.');
-        }
+        $this->authorize('user-export');
 
         return PDF::loadView('admin.users.report', [
             'dataset' => User::orderBy('name', 'asc')->filter(request(['name', 'email']))->get()

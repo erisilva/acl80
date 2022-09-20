@@ -5,14 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Models\Permission;
 use App\Models\Perpage;
 
-use Response;
-
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\Gate;
-
-use Illuminate\Support\Facades\DB;
 
 use App\Exports\PermissionsExport;
 use Maatwebsite\Excel\Facades\Excel;
@@ -29,9 +23,7 @@ class PermissionController extends Controller
 
     public function index()
     {
-        if (Gate::denies('permission-index')) {
-            abort(403, 'Acesso negado.');
-        }
+        $this->authorize('permission-index');
 
         // atualiza perPage se necessário
         if(request()->has('perpage')) {
@@ -46,9 +38,7 @@ class PermissionController extends Controller
 
     public function create()
     {
-        if (Gate::denies('permission-create')) {
-            abort(403, 'Acesso negado.');
-        }
+        $this->authorize('permission-create');
 
         return view('admin.permissions.create');
     }
@@ -70,9 +60,7 @@ class PermissionController extends Controller
 
     public function show($id)
     {
-        if (Gate::denies('permission-show')) {
-            abort(403, 'Acesso negado.');
-        }
+        $this->authorize('permission-show');
 
         return view('admin.permissions.show', [
             'permission' => Permission::findOrFail($id)
@@ -81,9 +69,7 @@ class PermissionController extends Controller
 
     public function edit($id)
     {
-        if (Gate::denies('permission-edit')) {
-            abort(403, 'Acesso negado.');
-        }
+        $this->authorize('permission-edit');
 
         return view('admin.permissions.edit', [
             'permission' => Permission::findOrFail($id)
@@ -104,10 +90,8 @@ class PermissionController extends Controller
 
     public function destroy($id)
     {
-        if (Gate::denies('permission-delete')) {
-            abort(403, 'Acesso negado.');
-        }
-
+        $this->authorize('permission-delete');
+        
         Permission::findOrFail($id)->delete();
 
         return redirect(route('permissions.index'))->with('message', 'Permissão excluída com sucesso!');
@@ -115,27 +99,21 @@ class PermissionController extends Controller
 
     public function exportcsv()
     {
-        if (Gate::denies('permission-export')) {
-            abort(403, 'Acesso negado.');
-        }
+        $this->authorize('permission-export');
 
         return Excel::download(new PermissionsExport(request(['name', 'description'])), 'Permissoes_' .  date("Y-m-d H:i:s") . '.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
     public function exportxls()
     {
-        if (Gate::denies('permission-export')) {
-            abort(403, 'Acesso negado.');
-        }
+        $this->authorize('permission-export');
 
         return Excel::download(new PermissionsExport(request(['name', 'description'])), 'Permissoes_' .  date("Y-m-d H:i:s") . '.xlsx', \Maatwebsite\Excel\Excel::XLSX);
     }
 
     public function exportpdf()
     {
-        if (Gate::denies('permission-export')) {
-            abort(403, 'Acesso negado.');
-        }
+        $this->authorize('permission-export');
         
         return PDF::loadView('admin.permissions.report', [
             'dataset' => Permission::orderBy('id', 'asc')->filter(request(['name', 'description']))->get()

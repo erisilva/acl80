@@ -43,7 +43,6 @@ class ChangePasswordController extends Controller
 		$this->validate($request, [
 			'password' => 'required|min:6',
           	'newpassword' => 'required|min:6|confirmed',
-
         ]);
 
         $input = $request->all();

@@ -5,7 +5,7 @@
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{{ route('users.index') }}">Lista de Operadores</a></li>
-      <li class="breadcrumb-item active" aria-current="page"><a href="{{ route('roles.index') }}">Perfis</a></li>
+      <li class="breadcrumb-item active" aria-current="page"><a href="{{ route('roles.index') }}">Perfis</a></li>      
     </ol>
   </nav>
 
@@ -15,6 +15,9 @@
     <a class="dropdown-item" href="{{ route('roles.index') }}"><i class="bi bi-layout-sidebar"></i> Perfis</a>
     <a class="dropdown-item" href="{{ route('permissions.index') }}"><i class="bi bi-layout-sidebar"></i> Permissões</a>
     <div class="dropdown-divider"></div>
+    <a class="dropdown-item" href="{{route('roles.export.xls', ['description' => request()->input('description'), 'name' => request()->input('name')])}}"><i class="bi bi-file-earmark-spreadsheet-fill"></i> Exportar Planilha Excel</a>
+    <a class="dropdown-item" href="{{route('roles.export.csv', ['description' => request()->input('description'), 'name' => request()->input('name')])}}"><i class="bi bi-file-earmark-spreadsheet-fill"></i> Exportar Planilha CSV</a>
+    <a class="dropdown-item" href="{{route('roles.export.pdf', ['description' => request()->input('description'), 'name' => request()->input('name')])}}"><i class="bi bi-file-pdf-fill"></i> Exportar PDF</a>
   </x-btn-group>
 
   <div class="table-responsive">

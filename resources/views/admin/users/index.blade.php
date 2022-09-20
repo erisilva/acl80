@@ -14,6 +14,9 @@
     <a class="dropdown-item" href="{{ route('roles.index') }}"><i class="bi bi-layout-sidebar"></i> Perfis</a>
     <a class="dropdown-item" href="{{ route('permissions.index') }}"><i class="bi bi-layout-sidebar"></i> Permissões</a>
     <div class="dropdown-divider"></div>
+    <a class="dropdown-item" href="{{route('users.export.xls', ['name' => request()->input('name'), 'email' => request()->input('email')])}}"><i class="bi bi-file-earmark-spreadsheet-fill"></i> Exportar Planilha Excel</a>
+    <a class="dropdown-item" href="{{route('users.export.csv', ['name' => request()->input('name'), 'email' => request()->input('email')])}}"><i class="bi bi-file-earmark-spreadsheet-fill"></i> Exportar Planilha CSV</a>
+    <a class="dropdown-item" href="{{route('users.export.pdf', ['name' => request()->input('name'), 'email' => request()->input('email')])}}"><i class="bi bi-file-pdf-fill"></i> Exportar PDF</a>
   </x-btn-group>
 
   <div class="table-responsive">
